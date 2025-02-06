@@ -1,0 +1,192 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "MyVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyVPC"
+          }
+        ]
+      }
+    },
+    "Subnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": "" } ] },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Subnet1"
+          }
+        ]
+      }
+    },
+    "Subnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": "" } ] },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Subnet2"
+          }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyInternetGateway"
+          }
+        ]
+      }
+    },
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "InternetGatewayId": { "Ref": "InternetGateway" }
+      }
+    },
+    "RouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyRouteTable"
+          }
+        ]
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "RouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref": "InternetGateway" }
+      }
+    },
+    "SubnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "Subnet1" },
+        "RouteTableId": { "Ref": "RouteTable" }
+      }
+    },
+    "SubnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "Subnet2" },
+        "RouteTableId": { "Ref": "RouteTable" }
+      }
+    },
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable SSH and HTTP access",
+        "VpcId": { "Ref": "MyVPC" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "MyInstance1": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": "t2.micro",
+        "KeyName": "net",
+        "ImageId": "ami-0d2614eafc1b0e4d2",
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "true",
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref": "Subnet1" },
+            "GroupSet": [ { "Ref": "SecurityGroup" } ]
+          }
+        ]
+      }
+    },
+    "MyInstance2": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": "t2.micro",
+        "KeyName": "net",
+        "ImageId": "ami-0d2614eafc1b0e4d2",
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "true",
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref": "Subnet2" },
+            "GroupSet": [ { "Ref": "SecurityGroup" } ]
+          }
+        ]
+      }
+    },
+    "MyBucket1": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "goodcorpbucket100"
+      }
+    },
+    "MyBucket2": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "goodcorpbucket200"
+      }
+    },
+    "MyBucket3": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "goodcorpbucket300"
+      }
+    }
+  },
+  "Outputs": {
+    "Instance1Id": {
+      "Description": "Instance ID 1",
+      "Value": { "Ref": "MyInstance1" }
+    },
+    "Instance2Id": {
+      "Description": "Instance ID 2",
+      "Value": { "Ref": "MyInstance2" }
+    },
+    "Bucket1Name": {
+      "Description": "S3 Bucket Name 1",
+      "Value": { "Ref": "MyBucket1" }
+    },
+    "Bucket2Name": {
+      "Description": "S3 Bucket Name 2",
+      "Value": { "Ref": "MyBucket2" }
+    },
+    "Bucket3Name": {
+      "Description": "S3 Bucket Name 3",
+      "Value": { "Ref": "MyBucket3" }
+    }
+  }
+}
